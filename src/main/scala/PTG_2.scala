@@ -6,7 +6,6 @@ import java.awt.event.{KeyListener, KeyEvent, ComponentAdapter, ComponentEvent}
 object PTG_2 extends SimpleSwingApplication {
   private var x = 200
   private var y = 240
-  private var atac = 0
   private val teclasPresionadas: scala.collection.mutable.Set[Int] = scala.collection.mutable.Set()
 
   def top: Frame = new MainFrame {
@@ -22,20 +21,36 @@ object PTG_2 extends SimpleSwingApplication {
     private var moveRight = false
     private var moveUp = false
     private var moveDown = false
+    private var cooldown = 0
+    private var atacP = 0
+    private var atacO = 0
 
     private val diagonalSpeed = 5
     private val height = 360
     private val width = 360
     private val fuente = 12
     private val etiqueta = new Label("Texto inicial") { foreground = Color.WHITE }
+    private val barra = new Label("") { foreground = Color.WHITE }
     private val elementos = new Elementos
+    private val animationPanel = new AnimationPanel
 
     val temporizador = new Timer(50, _ => {
       contador += 1
       sprint = 2
       if (teclasPresionadas.contains(KeyEvent.VK_ESCAPE)) System.exit(0)
       if (teclasPresionadas.contains(KeyEvent.VK_SHIFT)) sprint = 1
-      if (teclasPresionadas.contains(KeyEvent.VK_SPACE)) atac = 1
+      if (teclasPresionadas.contains(KeyEvent.VK_SPACE) && atacP == 1) {
+        if (atacO == 0) animationPanel.loadAnimation(x-fuente, y, "ataque")
+        if (atacO == 1) animationPanel.loadAnimation(x+1+fuente/2, y, "ataque")
+        if (atacO == 2) animationPanel.loadAnimation(x, y-fuente, "ataque")
+        if (atacO == 3) animationPanel.loadAnimation(x, y+fuente, "ataque")
+        atacP = 0
+        cooldown = 0
+      }
+      barra.text = ""
+      barra.text = "■■" * cooldown
+
+      if (cooldown < 8){ cooldown += 1 } else { atacP = 1 }
       if (contador % sprint == 0) {
         etiqueta.text = s"Frame: $dLeft, $dRight, $dUp, $dDown"
 
@@ -61,27 +76,39 @@ object PTG_2 extends SimpleSwingApplication {
           x -= math.min(dLeft, diagonalSpeed)
           dUp = elementos.distancia(x, y, fuente, "u")
           y -= math.min(dUp, diagonalSpeed)
+          atacO = 2
 
         } else if (moveLeft && moveDown) {
           x -= math.min(dLeft, diagonalSpeed)
           dDown = elementos.distancia(x, y, fuente, "d")
           y += math.min(dDown, diagonalSpeed)
+          atacO = 3
 
         } else if (moveRight && moveUp) {
           x += math.min(dRight, diagonalSpeed)
           dUp = elementos.distancia(x, y, fuente, "u")
           y -= math.min(dUp, diagonalSpeed)
+          atacO = 2
 
         } else if (moveRight && moveDown) {
           x += math.min(dRight, diagonalSpeed)
           dDown = elementos.distancia(x, y, fuente, "d")
           y += math.min(dDown, diagonalSpeed)
+          atacO = 3
 
         } else {
-          if (moveLeft) x -= math.min(dLeft, fuente/2)
-          if (moveRight) x += math.min(dRight, fuente/2)
-          if (moveUp) y -= math.min(dUp, fuente/2)
-          if (moveDown) y += math.min(dDown, fuente/2)
+          if (moveLeft) {
+            x -= math.min(dLeft, fuente / 2)
+            atacO = 0}
+          if (moveRight) {
+            x += math.min(dRight, fuente / 2)
+            atacO = 1}
+          if (moveUp) {
+            y -= math.min(dUp, fuente / 2)
+            atacO = 2}
+          if (moveDown) {
+            y += math.min(dDown, fuente / 2)
+            atacO = 3}
         }
       }
       repaint()
@@ -97,13 +124,11 @@ object PTG_2 extends SimpleSwingApplication {
         g.setColor(Color.WHITE)
         g.setFont(new Font("Consolas", Font.PLAIN, fuente))
         g.drawString(etiqueta.text, width * fuente / 10 + fuente, 10)
+        g.drawString(barra.text, width * fuente / 10 + fuente, 50)
         elementos.dibujar(g)
         elementos.dibujarMarco(g, width, vWidth, height, fuente)
         g.drawString("P", x, y)
-        if (atac == 1) {
-          elementos.animar(g, x, y, "ataque")
-          atac = 0
-        }
+        animationPanel.paintComponent(g)
       }
 
       focusable = true

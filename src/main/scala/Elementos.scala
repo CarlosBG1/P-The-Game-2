@@ -1,7 +1,7 @@
 import java.awt.Graphics2D
-import javax.swing.Timer
 import scala.io.Source
 import scala.util.Using
+
 
 case class Item(x: Int, y: Int, texto: String)
 case class Hitbox(x1: Int, y1: Int, x2: Int, y2: Int)
@@ -98,37 +98,7 @@ class Elementos {
     }
     if (distances.nonEmpty) distances.min else Int.MaxValue
   }
-  def animar(g: Graphics2D, x: Int, y: Int, nombre: String, contador: Int): Option[(Int, Int, String)] = {
-    val resource = getClass.getResourceAsStream(s"/Res/Animaciones/$nombre.txt")
-    if (resource == null) {
-      println(s"Error: File not found: $nombre.txt")
-      None
-    } else {
-      var v = 0
-      var drawCommand: Option[(Int, Int, String)] = None
 
-      Using(Source.fromInputStream(resource)) { source =>
-        source.getLines().foreach { line =>
-          val Array(tipo, datos) = line.split("/,")
-          tipo match {
-            case "v" =>
-              v = datos.toInt
-            case "f" =>
-              val Array(dx, dy, texto) = datos.split("/.")
-              if (contador % v == 0) {
-                drawCommand = Some((x + dx.toInt, y + dy.toInt, texto))
-              }
-            case "p" =>
-              Thread.sleep(v)
-              g.clearRect(0, 0, 100, 100)
-          }
-        }
-      }.recover {
-        case e: Exception => println(s"Error reading animation file: ${e.getMessage}")
-      }
-      drawCommand
-    }
-  }
   def atac (g: Graphics2D, x: Int, y: Int, fuente: Int, tipo: Int): Int = {
     1
   }
